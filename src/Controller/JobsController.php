@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\Constraints as Assert;
+use Psr\Log\LoggerInterface;
+
 
 class JobsController extends AbstractController
 {
@@ -99,20 +101,29 @@ class JobsController extends AbstractController
         }
 
 
-        if (!empty($location)) {
-            $qb->andWhere('j.location LIKE :location')
-                ->setParameter('location', '%' . $location . '%');
-        }
+        // if (!empty($location)) {
+        //     $qb->andWhere('j.location LIKE :location')
+        //         ->setParameter('location', '%' . $location . '%');
+        // }
 
-        if ($fulltime !== null) {
-            $qb->andWhere('j.contract LIKE :contract')
-                ->setParameter('contract', $fulltime ? '%Full-Time%' : '%Part-Time%');
-        }
+        // if ($fulltime !== null) {
+        //     $qb->andWhere('j.contract LIKE :contract')
+        //         ->setParameter('contract', $fulltime ? '%Full-Time%' : '%Part-Time%');
+        // }
 
         $qb->setFirstResult($offset)
             ->setMaxResults($limit);
 
         $jobs = $qb->getQuery()->getResult();
+
+        // Ajoute un débogage pour voir les résultats de la requête
+        if (empty($jobs)) {
+            // Log ou message d'erreur si aucun résultat n'est trouvé
+            error_log('Aucun job trouvé');
+        } else {
+            // Affiche les données récupérées
+            error_log('Jobs récupérés : ' . print_r($jobs, true));
+        }
 
         $data = array_map(function (Jobs $job) {
             return [
