@@ -32,6 +32,30 @@ class Jobs
     #[ORM\Column]
     private ?\DateTimeImmutable $postedAt = null;
 
+    #[ORM\Column(length: 7)]
+    private ?string $logoBackground = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $apply = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $description = null;
+
+    #[ORM\Column(type: Types::TEXT)]
+    private ?string $requirementsContent = null;
+
+    #[ORM\Column(type: Types::JSON)]
+    private array $requirementsItems = [];
+
+    #[ORM\Column(type: Types::TEXT)]
+    private ?string $roleContent = null;
+
+    #[ORM\Column(type: Types::JSON)]
+    private array $roleItems = [];
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $website = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -105,6 +129,102 @@ class Jobs
     public function setPostedAt(\DateTimeImmutable $postedAt): static
     {
         $this->postedAt = $postedAt;
+
+        return $this;
+    }
+
+    public function getLogoBackground(): ?string
+    {
+        return $this->logoBackground;
+    }
+
+    public function setLogoBackground(string $logoBackground): static
+    {
+        $this->logoBackground = $logoBackground;
+
+        return $this;
+    }
+
+    public function getApply(): ?string
+    {
+        return $this->apply;
+    }
+
+    public function setApply(string $apply): static
+    {
+        $this->apply = $apply;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getRequirementsContent(): ?string
+    {
+        return $this->requirementsContent;
+    }
+
+    public function setRequirementsContent(string $requirementsContent): static
+    {
+        $this->requirementsContent = $requirementsContent;
+
+        return $this;
+    }
+
+    public function getRequirementsItems(): array
+    {
+        return $this->requirementsItems;
+    }
+
+    public function setRequirementsItems(array $requirementsItems): static
+    {
+        $this->requirementsItems = $requirementsItems;
+
+        return $this;
+    }
+
+    public function getRoleContent(): ?string
+    {
+        return $this->roleContent;
+    }
+
+    public function setRoleContent(string $roleContent): static
+    {
+        $this->roleContent = $roleContent;
+
+        return $this;
+    }
+
+    public function getRoleItems(): array
+    {
+        return $this->roleItems;
+    }
+
+    public function setRoleItems(array $roleItems): static
+    {
+        $this->roleItems = $roleItems;
+
+        return $this;
+    }
+
+    public function getWebsite(): ?string
+    {
+        return $this->website;
+    }
+
+    public function setWebsite(?string $website): static
+    {
+        $this->website = $website;
 
         return $this;
     }
