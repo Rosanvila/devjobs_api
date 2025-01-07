@@ -31,13 +31,17 @@ class JobsController extends AbstractController
                 'postedAt' => $job->getPostedAt()->format('Y-m-d H:i:s'),
                 'logo' => $job->getLogo(),
                 'logoBackground' => $job->getLogoBackground(),
-                'apply' => $job->getApply(),
                 'description' => $job->getDescription(),
-                'requirementsContent' => $job->getRequirementsContent(),
-                'requirementsItems' => $job->getRequirementsItems(),
-                'roleContent' => $job->getRoleContent(),
-                'roleItems' => $job->getRoleItems(),
-                'website' => $job->getWebsite()
+                'requirements' => [
+                    'content' => $job->getRequirementsContent(),
+                    'items' => $job->getRequirementsItems()
+                ],
+                'role' => [
+                    'content' => $job->getRoleContent(),
+                    'items' => $job->getRoleItems()
+                ],
+                'website' => $job->getWebsite(),
+                'apply' => $job->getApply()
             ], $jobs)
         ];
 
@@ -56,13 +60,17 @@ class JobsController extends AbstractController
             'postedAt' => $job->getPostedAt()->format('Y-m-d H:i:s'),
             'logo' => $job->getLogo(),
             'logoBackground' => $job->getLogoBackground(),
-            'apply' => $job->getApply(),
             'description' => $job->getDescription(),
-            'requirementsContent' => $job->getRequirementsContent(),
-            'requirementsItems' => $job->getRequirementsItems(),
-            'roleContent' => $job->getRoleContent(),
-            'roleItems' => $job->getRoleItems(),
-            'website' => $job->getWebsite()
+            'requirements' => [
+                'content' => $job->getRequirementsContent(),
+                'items' => $job->getRequirementsItems()
+            ],
+            'role' => [
+                'content' => $job->getRoleContent(),
+                'items' => $job->getRoleItems()
+            ],
+            'website' => $job->getWebsite(),
+            'apply' => $job->getApply()
         ], 200);
     }
 
@@ -78,22 +86,21 @@ class JobsController extends AbstractController
             'position' => new Assert\NotBlank(),
             'logo' => new Assert\NotBlank(),
             'logoBackground' => new Assert\NotBlank(),
-            'apply' => new Assert\NotBlank(),
             'description' => new Assert\NotBlank(),
             'requirements' => new Assert\Collection([
                 'content' => new Assert\NotBlank(),
                 'items' => new Assert\All([
                     new Assert\NotBlank()
-                ])
-            ]),
-            'role' => new Assert\Collection([
-                'content' => new Assert\NotBlank(),
-                'items' => new Assert\All([
-                    new Assert\NotBlank()
-                ])
-            ]),
-            'website' => new Assert\NotBlank(),
-            'apply' => new Assert\NotBlank()
+                    ])
+                ]),
+                'role' => new Assert\Collection([
+                    'content' => new Assert\NotBlank(),
+                    'items' => new Assert\All([
+                        new Assert\NotBlank()
+                        ])
+                    ]),
+                    'website' => new Assert\NotBlank(),
+                    'apply' => new Assert\NotBlank()
         ]);
 
         $violations = $validator->validate($data, $constraint);
@@ -101,7 +108,6 @@ class JobsController extends AbstractController
         if (count($violations) > 0) {
             $errors = [];
             foreach ($violations as $violation) {
-                // Afficher les détails de l'erreur
                 $errors[] = [
                     'field' => $violation->getPropertyPath(),
                     'message' => $violation->getMessage(),
@@ -109,7 +115,6 @@ class JobsController extends AbstractController
             }
             return new JsonResponse(['errors' => $errors], 400);
         }
-
 
         $job = new Jobs();
 
