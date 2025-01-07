@@ -1,4 +1,5 @@
-<?php 
+<?php
+
 namespace App\Controller;
 
 use App\Entity\Jobs;
@@ -75,16 +76,24 @@ class JobsController extends AbstractController
             'contract' => new Assert\NotBlank(),
             'location' => new Assert\NotBlank(),
             'position' => new Assert\NotBlank(),
-            'postedAt' => new Assert\NotBlank(),
             'logo' => new Assert\NotBlank(),
             'logoBackground' => new Assert\NotBlank(),
             'apply' => new Assert\NotBlank(),
             'description' => new Assert\NotBlank(),
-            'requirementsContent' => new Assert\NotBlank(),
-            'requirementsItems' => new Assert\NotBlank(),
-            'roleContent' => new Assert\NotBlank(),
-            'roleItems' => new Assert\NotBlank(),
-            'website' => new Assert\NotBlank()
+            'requirements' => new Assert\Collection([
+                'content' => new Assert\NotBlank(),
+                'items' => new Assert\All([
+                    new Assert\NotBlank()
+                ])
+            ]),
+            'role' => new Assert\Collection([
+                'content' => new Assert\NotBlank(),
+                'items' => new Assert\All([
+                    new Assert\NotBlank()
+                ])
+            ]),
+            'website' => new Assert\NotBlank(),
+            'apply' => new Assert\NotBlank()
         ]);
 
         $violations = $validator->validate($data, $constraint);
@@ -92,24 +101,55 @@ class JobsController extends AbstractController
         if (count($violations) > 0) {
             $errors = [];
             foreach ($violations as $violation) {
-                $errors[] = $violation->getMessage();
+                // Afficher les détails de l'erreur
+                $errors[] = [
+                    'field' => $violation->getPropertyPath(),
+                    'message' => $violation->getMessage(),
+                ];
             }
             return new JsonResponse(['errors' => $errors], 400);
         }
 
+
         $job = new Jobs();
+
         $fields = [
-            'logo', 'company', 'contract', 'location', 'position', 'postedAt',
-            'logoBackground', 'apply', 'description', 'requirementsContent',
-            'requirementsItems', 'roleContent', 'roleItems', 'website'
+            'company',
+            'contract',
+            'location',
+            'position',
+            'logo',
+            'logoBackground',
+            'apply',
+            'description',
+            'website',
+            'requirements' => [
+                'content',
+                'items'
+            ],
+            'role' => [
+                'content',
+                'items'
+            ]
         ];
 
-        foreach ($fields as $field) {
-            $setter = 'set' . ucfirst($field);
-            if (method_exists($job, $setter)) {
-                $job->$setter($data[$field]);
+        foreach ($fields as $key => $field) {
+            if (is_array($field)) {
+                foreach ($field as $subField) {
+                    $setter = 'set' . ucfirst($key) . ucfirst($subField);
+                    if (method_exists($job, $setter)) {
+                        $job->$setter($data[$key][$subField]);
+                    }
+                }
+            } else {
+                $setter = 'set' . ucfirst($field);
+                if (method_exists($job, $setter)) {
+                    $job->$setter($data[$field]);
+                }
             }
         }
+
+        $job->setPostedAt(new \DateTimeImmutable());
 
         $entityManager->persist($job);
         $entityManager->flush();

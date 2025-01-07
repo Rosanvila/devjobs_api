@@ -174,9 +174,9 @@ class Jobs
         return $this->requirementsContent;
     }
 
-    public function setRequirementsContent(string $requirementsContent): static
+    public function setRequirementsContent(string $content): static
     {
-        $this->requirementsContent = $requirementsContent;
+        $this->requirementsContent = $content;
 
         return $this;
     }
@@ -186,9 +186,9 @@ class Jobs
         return $this->requirementsItems;
     }
 
-    public function setRequirementsItems(array $requirementsItems): static
+    public function setRequirementsItems(array $items): static
     {
-        $this->requirementsItems = $requirementsItems;
+        $this->requirementsItems = $items;
 
         return $this;
     }
@@ -198,9 +198,9 @@ class Jobs
         return $this->roleContent;
     }
 
-    public function setRoleContent(string $roleContent): static
+    public function setRoleContent(string $content): static
     {
-        $this->roleContent = $roleContent;
+        $this->roleContent = $content;
 
         return $this;
     }
@@ -210,9 +210,9 @@ class Jobs
         return $this->roleItems;
     }
 
-    public function setRoleItems(array $roleItems): static
+    public function setRoleItems(array $items): static
     {
-        $this->roleItems = $roleItems;
+        $this->roleItems = $items;
 
         return $this;
     }
