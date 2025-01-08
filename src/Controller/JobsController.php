@@ -10,8 +10,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\Constraints as Assert;
-use Psr\Log\LoggerInterface;
-
 
 class JobsController extends AbstractController
 {
@@ -95,35 +93,22 @@ class JobsController extends AbstractController
         $qb->select('j')
             ->from(Jobs::class, 'j');
 
+        // Vérifie les paramètres un par un
         if (!empty($text)) {
             $qb->andWhere('j.company LIKE :text')
                 ->setParameter('text', '%' . $text . '%');
+        } elseif (!empty($location)) {
+            $qb->andWhere('j.location LIKE :location')
+                ->setParameter('location', '%' . $location . '%');
+        } elseif ($fulltime !== null) {
+            $qb->andWhere('j.contract LIKE :contract')
+                ->setParameter('contract', $fulltime ? '%Full-Time%' : '%Part-Time%');
         }
-
-
-        // if (!empty($location)) {
-        //     $qb->andWhere('j.location LIKE :location')
-        //         ->setParameter('location', '%' . $location . '%');
-        // }
-
-        // if ($fulltime !== null) {
-        //     $qb->andWhere('j.contract LIKE :contract')
-        //         ->setParameter('contract', $fulltime ? '%Full-Time%' : '%Part-Time%');
-        // }
 
         $qb->setFirstResult($offset)
             ->setMaxResults($limit);
 
         $jobs = $qb->getQuery()->getResult();
-
-        // Ajoute un débogage pour voir les résultats de la requête
-        if (empty($jobs)) {
-            // Log ou message d'erreur si aucun résultat n'est trouvé
-            error_log('Aucun job trouvé');
-        } else {
-            // Affiche les données récupérées
-            error_log('Jobs récupérés : ' . print_r($jobs, true));
-        }
 
         $data = array_map(function (Jobs $job) {
             return [
@@ -154,8 +139,6 @@ class JobsController extends AbstractController
             'jobs' => $data
         ], 200);
     }
-
-
 
     #[Route('/api/jobs', methods: ['POST'])]
     public function create(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): JsonResponse
