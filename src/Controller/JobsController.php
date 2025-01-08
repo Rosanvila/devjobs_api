@@ -93,7 +93,6 @@ class JobsController extends AbstractController
         $qb->select('j')
             ->from(Jobs::class, 'j');
 
-        // Vérifie les paramètres un par un
         if (!empty($text)) {
             $qb->andWhere('j.company LIKE :text')
                 ->setParameter('text', '%' . $text . '%');
@@ -103,6 +102,11 @@ class JobsController extends AbstractController
         } elseif ($fulltime !== null) {
             $qb->andWhere('j.contract LIKE :contract')
                 ->setParameter('contract', $fulltime ? '%Full-Time%' : '%Part-Time%');
+        }
+
+        // Si aucun paramètre n'est renseigné, on renvoie une erreur
+        if (empty($jobs)) {
+            return new JsonResponse(['error' => 'No jobs found'], 404);
         }
 
         $qb->setFirstResult($offset)
