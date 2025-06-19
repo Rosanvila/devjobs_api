@@ -1,0 +1,10 @@
+framework:
+    rate_limiter:
+        api:
+            policy: 'fixed_window'
+            limit: 100
+            interval: '1 hour'
+        api_search:
+            policy: 'sliding_window'
+            limit: 30
+            interval: '1 minute' 
