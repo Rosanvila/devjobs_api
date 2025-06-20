@@ -16,22 +16,23 @@ class JobsController extends AbstractController
     #[Route('/api/jobs', methods: ['GET'])]
     public function getAll(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
-        $page = max(1, (int) $request->query->get('page', 1));
+        // Pagination optimisée pour offset
+        $offset = max(0, (int) $request->query->get('offset', 0));
         $limit = min(25, max(1, (int) $request->query->get('limit', 10)));
-        $offset = ($page - 1) * $limit;
 
         $jobsRepository = $entityManager->getRepository(Jobs::class);
 
         // Compter le total
         $total = $jobsRepository->count([]);
 
-        // Récupérer les jobs
+        // Récupérer les jobs avec offset
         $jobs = $jobsRepository->findBy([], ['postedAt' => 'DESC'], $limit, $offset);
 
-        // Calculer les métadonnées de pagination
+        // Calculer les métadonnées de pagination pour offset
+        $currentPage = floor($offset / $limit) + 1;
         $totalPages = ceil($total / $limit);
-        $hasNextPage = $page < $totalPages;
-        $hasPrevPage = $page > 1;
+        $hasNextPage = $offset + $limit < $total;
+        $hasPrevPage = $offset > 0;
 
         // Sérialisation des données pour les envoyer en JSON au front
         $data = [
@@ -57,14 +58,16 @@ class JobsController extends AbstractController
                 'apply' => $job->getApply()
             ], $jobs),
             'pagination' => [
-                'currentPage' => $page,
-                'totalPages' => $totalPages,
-                'totalItems' => $total,
-                'itemsPerPage' => $limit,
+                'offset' => $offset,
+                'limit' => $limit,
+                'total' => $total,
                 'hasNextPage' => $hasNextPage,
                 'hasPrevPage' => $hasPrevPage,
-                'nextPage' => $hasNextPage ? $page + 1 : null,
-                'prevPage' => $hasPrevPage ? $page - 1 : null
+                'nextOffset' => $hasNextPage ? $offset + $limit : null,
+                'prevOffset' => $hasPrevPage ? max(0, $offset - $limit) : null,
+                // Informations supplémentaires pour compatibilité
+                'currentPage' => $currentPage,
+                'totalPages' => $totalPages
             ]
         ];
 
@@ -252,9 +255,9 @@ class JobsController extends AbstractController
     #[Route('/api/jobs/filter', methods: ['GET'])]
     public function filterJobs(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
-        $page = max(1, (int) $request->query->get('page', 1));
+        // Pagination optimisée pour offset
+        $offset = max(0, (int) $request->query->get('offset', 0));
         $limit = min(25, max(1, (int) $request->query->get('limit', 10)));
-        $offset = ($page - 1) * $limit;
 
         // Paramètres de filtrage
         $company = $request->query->get('company');
@@ -300,17 +303,18 @@ class JobsController extends AbstractController
         $countQb = clone $qb;
         $total = $countQb->select('COUNT(j.id)')->getQuery()->getSingleScalarResult();
 
-        // Tri et pagination
+        // Tri et pagination avec offset
         $qb->orderBy('j.' . $sortBy, $sortOrder)
             ->setFirstResult($offset)
             ->setMaxResults($limit);
 
         $jobs = $qb->getQuery()->getResult();
 
-        // Calculer les métadonnées de pagination
+        // Calculer les métadonnées de pagination pour offset
+        $currentPage = floor($offset / $limit) + 1;
         $totalPages = ceil($total / $limit);
-        $hasNextPage = $page < $totalPages;
-        $hasPrevPage = $page > 1;
+        $hasNextPage = $offset + $limit < $total;
+        $hasPrevPage = $offset > 0;
 
         $data = [
             'data' => array_map(function (Jobs $job) {
@@ -337,14 +341,16 @@ class JobsController extends AbstractController
                 ];
             }, $jobs),
             'pagination' => [
-                'currentPage' => $page,
-                'totalPages' => $totalPages,
-                'totalItems' => $total,
-                'itemsPerPage' => $limit,
+                'offset' => $offset,
+                'limit' => $limit,
+                'total' => $total,
                 'hasNextPage' => $hasNextPage,
                 'hasPrevPage' => $hasPrevPage,
-                'nextPage' => $hasNextPage ? $page + 1 : null,
-                'prevPage' => $hasPrevPage ? $page - 1 : null
+                'nextOffset' => $hasNextPage ? $offset + $limit : null,
+                'prevOffset' => $hasPrevPage ? max(0, $offset - $limit) : null,
+                // Informations supplémentaires pour compatibilité
+                'currentPage' => $currentPage,
+                'totalPages' => $totalPages
             ],
             'filters' => [
                 'applied' => array_filter([
@@ -359,62 +365,5 @@ class JobsController extends AbstractController
         ];
 
         return new JsonResponse($data, 200);
-    }
-
-    #[Route('/api/jobs/stats', methods: ['GET'])]
-    public function getStats(EntityManagerInterface $entityManager): JsonResponse
-    {
-        $qb = $entityManager->createQueryBuilder();
-
-        // Total des offres
-        $totalJobs = $qb->select('COUNT(j.id)')
-            ->from(Jobs::class, 'j')
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        // Offres par type de contrat
-        $contractStats = $entityManager->createQueryBuilder()
-            ->select('j.contract, COUNT(j.id) as count')
-            ->from(Jobs::class, 'j')
-            ->groupBy('j.contract')
-            ->getQuery()
-            ->getResult();
-
-        // Top 5 des entreprises
-        $topCompanies = $entityManager->createQueryBuilder()
-            ->select('j.company, COUNT(j.id) as count')
-            ->from(Jobs::class, 'j')
-            ->groupBy('j.company')
-            ->orderBy('count', 'DESC')
-            ->setMaxResults(5)
-            ->getQuery()
-            ->getResult();
-
-        // Top 5 des localisations
-        $topLocations = $entityManager->createQueryBuilder()
-            ->select('j.location, COUNT(j.id) as count')
-            ->from(Jobs::class, 'j')
-            ->groupBy('j.location')
-            ->orderBy('count', 'DESC')
-            ->setMaxResults(5)
-            ->getQuery()
-            ->getResult();
-
-        // Offres récentes (7 derniers jours)
-        $recentJobs = $entityManager->createQueryBuilder()
-            ->select('COUNT(j.id)')
-            ->from(Jobs::class, 'j')
-            ->where('j.postedAt >= :weekAgo')
-            ->setParameter('weekAgo', new \DateTimeImmutable('-7 days'))
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        return new JsonResponse([
-            'totalJobs' => $totalJobs,
-            'recentJobs' => $recentJobs,
-            'contracts' => $contractStats,
-            'topCompanies' => $topCompanies,
-            'topLocations' => $topLocations
-        ], 200);
     }
 }

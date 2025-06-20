@@ -22,12 +22,12 @@ class ApiDocController extends AbstractController
                     'path' => '/jobs',
                     'description' => 'Récupérer la liste paginée des offres d\'emploi',
                     'parameters' => [
-                        'page' => ['type' => 'integer', 'default' => 1, 'description' => 'Numéro de page'],
+                        'offset' => ['type' => 'integer', 'default' => 0, 'description' => 'Position de départ (0, 12, 24, ...)'],
                         'limit' => ['type' => 'integer', 'default' => 10, 'max' => 25, 'description' => 'Nombre d\'éléments par page']
                     ],
                     'response' => [
                         'data' => 'Array of job objects',
-                        'pagination' => 'Pagination metadata'
+                        'pagination' => 'Pagination metadata with offset'
                     ]
                 ],
                 [
@@ -50,26 +50,13 @@ class ApiDocController extends AbstractController
                         'contract' => ['type' => 'string', 'description' => 'Type de contrat'],
                         'sortBy' => ['type' => 'string', 'default' => 'postedAt', 'options' => ['postedAt', 'company', 'position', 'location']],
                         'sortOrder' => ['type' => 'string', 'default' => 'DESC', 'options' => ['ASC', 'DESC']],
-                        'page' => ['type' => 'integer', 'default' => 1],
-                        'limit' => ['type' => 'integer', 'default' => 10, 'max' => 25]
+                        'offset' => ['type' => 'integer', 'default' => 0, 'description' => 'Position de départ'],
+                        'limit' => ['type' => 'integer', 'default' => 10, 'max' => 25, 'description' => 'Nombre d\'éléments']
                     ],
                     'response' => [
                         'data' => 'Array of filtered job objects',
-                        'pagination' => 'Pagination metadata',
+                        'pagination' => 'Pagination metadata with offset',
                         'filters' => 'Applied filters information'
-                    ]
-                ],
-                [
-                    'method' => 'GET',
-                    'path' => '/jobs/stats',
-                    'description' => 'Récupérer les statistiques des offres d\'emploi',
-                    'parameters' => [],
-                    'response' => [
-                        'totalJobs' => 'Total number of jobs',
-                        'recentJobs' => 'Jobs posted in last 7 days',
-                        'contracts' => 'Jobs by contract type',
-                        'topCompanies' => 'Top 5 companies',
-                        'topLocations' => 'Top 5 locations'
                     ]
                 ],
                 [
