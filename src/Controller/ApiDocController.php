@@ -85,6 +85,22 @@ class ApiDocController extends AbstractController
                         ]
                     ],
                     'response' => ['status' => 'Job created!']
+                ],
+                [
+                    'method' => 'GET',
+                    'path' => '/jobs/search',
+                    'description' => 'Rechercher des offres d\'emploi (compatible frontend existant)',
+                    'parameters' => [
+                        'text' => ['type' => 'string', 'description' => 'Recherche dans entreprise et poste'],
+                        'location' => ['type' => 'string', 'description' => 'Localisation'],
+                        'fulltime' => ['type' => 'string', 'description' => 'Type de contrat (1=true, 0=false)'],
+                        'offset' => ['type' => 'integer', 'default' => 0, 'description' => 'Position de départ'],
+                        'limit' => ['type' => 'integer', 'default' => 10, 'max' => 25, 'description' => 'Nombre d\'éléments']
+                    ],
+                    'response' => [
+                        'data' => 'Array of filtered job objects',
+                        'pagination' => 'Pagination metadata with offset'
+                    ]
                 ]
             ],
             'errorResponses' => [

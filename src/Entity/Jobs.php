@@ -29,8 +29,8 @@ class Jobs
     #[ORM\Column(length: 55)]
     private ?string $position = null;
 
-    #[ORM\Column]
-    private ?\DateTimeImmutable $postedAt = null;
+    #[ORM\Column(type: Types::INTEGER)]
+    private ?int $postedAt = null;
 
     #[ORM\Column(length: 7)]
     private ?string $logoBackground = null;
@@ -121,12 +121,12 @@ class Jobs
         return $this;
     }
 
-    public function getPostedAt(): ?\DateTimeImmutable
+    public function getPostedAt(): ?int
     {
         return $this->postedAt;
     }
 
-    public function setPostedAt(\DateTimeImmutable $postedAt): static
+    public function setPostedAt(int $postedAt): static
     {
         $this->postedAt = $postedAt;
 

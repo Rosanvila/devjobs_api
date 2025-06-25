@@ -42,7 +42,7 @@ class JobsController extends AbstractController
                 'contract' => $job->getContract(),
                 'location' => $job->getLocation(),
                 'position' => $job->getPosition(),
-                'postedAt' => $job->getPostedAt()->format('Y-m-d H:i:s'),
+                'postedAt' => $job->getPostedAt() * 1000,
                 'logo' => $job->getLogo(),
                 'logoBackground' => $job->getLogoBackground(),
                 'description' => $job->getDescription(),
@@ -83,7 +83,7 @@ class JobsController extends AbstractController
             'contract' => $job->getContract(),
             'location' => $job->getLocation(),
             'position' => $job->getPosition(),
-            'postedAt' => $job->getPostedAt()->format('Y-m-d H:i:s'),
+            'postedAt' => $job->getPostedAt() * 1000,
             'logo' => $job->getLogo(),
             'logoBackground' => $job->getLogoBackground(),
             'description' => $job->getDescription(),
@@ -103,65 +103,90 @@ class JobsController extends AbstractController
     #[Route('/api/jobs/search', methods: ['GET'])]
     public function searchJobs(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
-        $text = $request->query->get('text', null);
-        $location = $request->query->get('location', null);
-        $fulltime = $request->query->getBoolean('fulltime', false);
-        $offset = $request->query->getInt('offset', 0);
-        $limit = $request->query->getInt('limit', 10);
+        // Pagination optimisée pour offset
+        $offset = max(0, (int) $request->query->get('offset', 0));
+        $limit = min(25, max(1, (int) $request->query->get('limit', 10)));
+
+        // Paramètres de recherche (compatibles avec l'ancien frontend)
+        $text = $request->query->get('text');
+        $location = $request->query->get('location');
+        $fulltime = $request->query->get('fulltime');
 
         $qb = $entityManager->createQueryBuilder();
         $qb->select('j')
             ->from(Jobs::class, 'j');
 
         if (!empty($text)) {
-            $qb->andWhere('j.company LIKE :text')
+            $qb->andWhere('LOWER(j.company) LIKE LOWER(:text) OR LOWER(j.position) LIKE LOWER(:text)')
                 ->setParameter('text', '%' . $text . '%');
-        } elseif (!empty($location)) {
-            $qb->andWhere('j.location LIKE :location')
+        }
+
+        if (!empty($location)) {
+            $qb->andWhere('LOWER(j.location) LIKE LOWER(:location)')
                 ->setParameter('location', '%' . $location . '%');
-        } elseif ($fulltime !== null) {
-            $qb->andWhere('j.contract LIKE :contract')
-                ->setParameter('contract', $fulltime ? '%Full-Time%' : '%Part-Time%');
         }
 
-        // Si aucun paramètre n'est renseigné, on renvoie une erreur
-        if (empty($jobs)) {
-            return new JsonResponse(['error' => 'No jobs found'], 404);
+        if ($fulltime !== null && $fulltime !== '') {
+            $isFullTime = $fulltime === '1' || $fulltime === 'true';
+            $qb->andWhere('LOWER(j.contract) LIKE LOWER(:contract)')
+                ->setParameter('contract', $isFullTime ? '%Full%' : '%Part%');
         }
 
-        $qb->setFirstResult($offset)
+        // Compter le total avec les filtres
+        $countQb = clone $qb;
+        $total = $countQb->select('COUNT(j.id)')->getQuery()->getSingleScalarResult();
+
+        // Tri et pagination avec offset
+        $qb->orderBy('j.postedAt', 'DESC')
+            ->setFirstResult($offset)
             ->setMaxResults($limit);
 
         $jobs = $qb->getQuery()->getResult();
 
-        $data = array_map(function (Jobs $job) {
-            return [
-                'id' => $job->getId(),
-                'company' => $job->getCompany(),
-                'contract' => $job->getContract(),
-                'location' => $job->getLocation(),
-                'position' => $job->getPosition(),
-                'postedAt' => $job->getPostedAt()->format('Y-m-d H:i:s'),
-                'logo' => $job->getLogo(),
-                'logoBackground' => $job->getLogoBackground(),
-                'description' => $job->getDescription(),
-                'requirements' => [
-                    'content' => $job->getRequirementsContent(),
-                    'items' => $job->getRequirementsItems()
-                ],
-                'role' => [
-                    'content' => $job->getRoleContent(),
-                    'items' => $job->getRoleItems()
-                ],
-                'website' => $job->getWebsite(),
-                'apply' => $job->getApply()
-            ];
-        }, $jobs);
+        // Calculer les métadonnées de pagination pour offset
+        $currentPage = floor($offset / $limit) + 1;
+        $totalPages = ceil($total / $limit);
+        $hasNextPage = $offset + $limit < $total;
+        $hasPrevPage = $offset > 0;
 
-        return new JsonResponse([
-            'total' => count($jobs),
-            'jobs' => $data
-        ], 200);
+        $data = [
+            'data' => array_map(function (Jobs $job) {
+                return [
+                    'id' => $job->getId(),
+                    'company' => $job->getCompany(),
+                    'contract' => $job->getContract(),
+                    'location' => $job->getLocation(),
+                    'position' => $job->getPosition(),
+                    'postedAt' => $job->getPostedAt() * 1000,
+                    'logo' => $job->getLogo(),
+                    'logoBackground' => $job->getLogoBackground(),
+                    'description' => $job->getDescription(),
+                    'requirements' => [
+                        'content' => $job->getRequirementsContent(),
+                        'items' => $job->getRequirementsItems()
+                    ],
+                    'role' => [
+                        'content' => $job->getRoleContent(),
+                        'items' => $job->getRoleItems()
+                    ],
+                    'website' => $job->getWebsite(),
+                    'apply' => $job->getApply()
+                ];
+            }, $jobs),
+            'pagination' => [
+                'offset' => $offset,
+                'limit' => $limit,
+                'total' => $total,
+                'hasNextPage' => $hasNextPage,
+                'hasPrevPage' => $hasPrevPage,
+                'nextOffset' => $hasNextPage ? $offset + $limit : null,
+                'prevOffset' => $hasPrevPage ? max(0, $offset - $limit) : null,
+                'currentPage' => $currentPage,
+                'totalPages' => $totalPages
+            ]
+        ];
+
+        return new JsonResponse($data, 200);
     }
 
     #[Route('/api/jobs', methods: ['POST'])]
@@ -244,7 +269,7 @@ class JobsController extends AbstractController
             }
         }
 
-        $job->setPostedAt(new \DateTimeImmutable());
+        $job->setPostedAt(time());
 
         $entityManager->persist($job);
         $entityManager->flush();
@@ -324,7 +349,7 @@ class JobsController extends AbstractController
                     'contract' => $job->getContract(),
                     'location' => $job->getLocation(),
                     'position' => $job->getPosition(),
-                    'postedAt' => $job->getPostedAt()->format('Y-m-d H:i:s'),
+                    'postedAt' => $job->getPostedAt() * 1000,
                     'logo' => $job->getLogo(),
                     'logoBackground' => $job->getLogoBackground(),
                     'description' => $job->getDescription(),
