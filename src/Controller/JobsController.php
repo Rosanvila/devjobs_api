@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class JobsController extends AbstractController
 {
@@ -190,9 +191,10 @@ class JobsController extends AbstractController
     }
 
     #[Route('/api/jobs', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function create(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $data = $request->toArray();
 
         $constraint = new Assert\Collection([
             'company' => new Assert\NotBlank(),
