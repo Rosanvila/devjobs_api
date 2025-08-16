@@ -24,6 +24,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         parent::__construct($registry, User::class);
     }
 
+    /**
+     * Sauvegarde un utilisateur
+     */
     public function save(User $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
@@ -33,6 +36,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         }
     }
 
+    /**
+     * Supprime un utilisateur
+     */
     public function remove(User $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
@@ -70,55 +76,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         }
 
         return $user;
-    }
-
-    /**
-     * Trouve tous les utilisateurs avec un rôle spécifique
-     */
-    public function findByRole(string $role): array
-    {
-        $qb = $this->createQueryBuilder('u');
-        $qb->where('u.roles LIKE :role')
-            ->setParameter('role', '%' . $role . '%');
-
-        return $qb->getQuery()->getResult();
-    }
-
-    /**
-     * Trouve tous les utilisateurs
-     */
-    public function findAllUsers(): array
-    {
-        return $this->findAll();
-    }
-
-    /**
-     * Nettoie les tokens expirés
-     */
-    public function cleanExpiredTokens(): int
-    {
-        $qb = $this->createQueryBuilder('u');
-        $qb->update(User::class, 'u')
-            ->set('u.token', ':null')
-            ->set('u.tokenExpiresAt', ':null')
-            ->where('u.tokenExpiresAt < :now')
-            ->setParameter('null', null)
-            ->setParameter('now', new \DateTime());
-
-        return $qb->getQuery()->execute();
-    }
-
-    /**
-     * Trouve les utilisateurs avec des tokens expirés
-     */
-    public function findUsersWithExpiredTokens(): array
-    {
-        $qb = $this->createQueryBuilder('u');
-        $qb->where('u.token IS NOT NULL')
-            ->andWhere('u.tokenExpiresAt < :now')
-            ->setParameter('now', new \DateTime());
-
-        return $qb->getQuery()->getResult();
     }
 
     /**

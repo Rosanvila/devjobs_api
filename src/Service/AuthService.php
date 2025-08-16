@@ -108,72 +108,10 @@ class AuthService
     }
 
     /**
-     * Nettoie les tokens expirés
-     */
-    public function cleanExpiredTokens(): int
-    {
-        return $this->userRepository->cleanExpiredTokens();
-    }
-
-    /**
      * Valide un mot de passe pour un utilisateur
      */
     public function validatePassword(User $user, string $password): bool
     {
         return $this->passwordHasher->isPasswordValid($user, $password);
-    }
-
-    /**
-     * Vérifie si un utilisateur a un rôle spécifique
-     */
-    public function hasRole(User $user, string $role): bool
-    {
-        return $user->hasRole($role);
-    }
-
-    /**
-     * Ajoute un rôle à un utilisateur
-     */
-    public function addRole(User $user, string $role): void
-    {
-        $user->addRole($role);
-        $this->userRepository->save($user, true);
-    }
-
-    /**
-     * Supprime un rôle d'un utilisateur
-     */
-    public function removeRole(User $user, string $role): void
-    {
-        $user->removeRole($role);
-        $this->userRepository->save($user, true);
-    }
-
-    /**
-     * Génère un token sécurisé avec une durée personnalisable
-     */
-    public function generateSecureToken(User $user, int $hours = 24): string
-    {
-        $token = $user->generateNewToken();
-
-        if ($hours !== 24) {
-            $user->setTokenExpiresAt((new \DateTime())->modify("+{$hours} hours"));
-        }
-
-        $this->userRepository->save($user, true);
-        return $token;
-    }
-
-    /**
-     * Vérifie si un token est sur le point d'expirer (dans les 2h)
-     */
-    public function isTokenExpiringSoon(User $user): bool
-    {
-        if (!$user->getTokenExpiresAt()) {
-            return true;
-        }
-
-        $twoHoursFromNow = (new \DateTime())->modify('+2 hours');
-        return $user->getTokenExpiresAt() <= $twoHoursFromNow;
     }
 }

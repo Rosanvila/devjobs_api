@@ -22,8 +22,6 @@ class SetupController extends AbstractController
             $admin = $this->authService->createUser(
                 'admin@devjobs.com',
                 'admin123',
-                'Admin',
-                'DevJobs',
                 ['ROLE_ADMIN', 'ROLE_USER']
             );
 
@@ -40,26 +38,5 @@ class SetupController extends AbstractController
                 'error' => $e->getMessage()
             ], 400);
         }
-    }
-
-    #[Route('/test-auth', methods: ['GET'])]
-    public function testAuth(): JsonResponse
-    {
-        return new JsonResponse([
-            'message' => 'Authentification configurée avec succès',
-            'endpoints' => [
-                'POST /api/auth/register' => 'Créer un compte',
-                'POST /api/auth/login' => 'Se connecter',
-                'POST /api/auth/logout' => 'Se déconnecter',
-                'POST /api/auth/refresh' => 'Rafraîchir le token',
-                'GET /api/auth/me' => 'Profil utilisateur',
-                'POST /api/auth/change-password' => 'Changer le mot de passe'
-            ],
-            'usage' => [
-                '1. Créer un admin avec POST /api/setup/create-admin',
-                '2. Se connecter avec POST /api/auth/login',
-                '3. Utiliser le token dans l\'en-tête Authorization: Bearer <token>'
-            ]
-        ], 200);
     }
 }
